@@ -150,6 +150,19 @@
         },
         "Path": "/",
         "Policies": [
+          {
+            "PolicyName": "allowEcsFullAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "ecs:*",
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
         ]
       }
     },
@@ -159,6 +172,48 @@
         "Path": "/",
         "Roles": [
           { "Ref": "ecsEc2InstanceRole" }
+        ]
+      }
+    },
+
+    "ecsServiceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ecs.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "allowElbManipulation",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "elasticloadbalancing:Describe*",
+                    "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+                    "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                    "ec2:Describe*",
+                    "ec2:AuthorizeSecurityGroupIngress"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
         ]
       }
     },
@@ -295,6 +350,41 @@
         ]
       },
       "DeletionPolicy" : "Delete"
+    },
+
+    "sonarTaskDefinition": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties" : {
+        "ContainerDefinitions" : [
+          {
+            "Name": "sonarqube",
+            "MountPoints": [],
+            "Image": "sonarqube:5.5",
+            "Cpu": "512",
+            "PortMappings":[
+              { "ContainerPort": "9000" }
+            ],
+            "EntryPoint": [],
+            "Memory": "1512",
+            "Essential": "true",
+            "Links": [],
+            "Environment": [
+              { "Name": "DISCOVERY_PORT", "Value": "8500" }
+            ]
+          }
+        ],
+        "Volumes": []
+      }
+    },
+
+    "sonarEcsService": {
+      "Type": "AWS::ECS::Service",
+      "DependsOn": [ "autoScalingGroup" ],
+      "Properties" : {
+        "Cluster": { "Ref": "sonarCluster" },
+        "DesiredCount": "1",
+        "TaskDefinition" : { "Ref": "sonarTaskDefinition" }
+      }
     }
   }
 }
