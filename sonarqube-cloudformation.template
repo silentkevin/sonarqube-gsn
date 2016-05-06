@@ -367,9 +367,8 @@
         "DesiredCount": "1",
         "TaskDefinition" : { "Ref": "sonarTaskDefinition" }
       }
-    }
-  },
-  "OtherStuff": {
+    },
+
     "db" : {
       "Type" : "AWS::RDS::DBInstance",
       "Properties" : {
