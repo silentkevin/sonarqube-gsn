@@ -381,6 +381,7 @@
       "Type": "AWS::ECS::Service",
       "DependsOn": [ "autoScalingGroup" ],
       "Properties" : {
+        "Role": { "Ref": "ecsServiceRole" },
         "Cluster": { "Ref": "sonarCluster" },
         "DesiredCount": "1",
         "TaskDefinition" : { "Ref": "sonarTaskDefinition" }
