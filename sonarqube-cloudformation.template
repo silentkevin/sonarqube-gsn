@@ -241,6 +241,16 @@
         "SourceSecurityGroupId": { "Ref": "elbSecurityGroup" }
       }
     },
+    "ecsEc2InstanceSecurityGroupIngress2": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": { "Ref": "ecsEc2InstanceSecurityGroup" },
+        "FromPort": "9000",
+        "ToPort": "9000",
+        "IpProtocol": "tcp",
+        "CidrIp": "0.0.0.0/0"
+      }
+    },
     "ecsEc2InstanceSecurityGroupEgress1": {
       "Type": "AWS::EC2::SecurityGroupEgress",
       "Properties": {
