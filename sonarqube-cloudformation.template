@@ -333,25 +333,6 @@
       }
     },
 
-    "db" : {
-      "Type" : "AWS::RDS::DBInstance",
-      "Properties" : {
-        "AllocatedStorage": "100",
-        "DBInstanceClass": "db.m1.small",
-        "Engine" : "MySQL",
-        "EngineVersion" : "5.5",
-        "MasterUsername" : { "Ref": "DbMasterUsername" },
-        "MasterUserPassword" : { "Ref": "DbMasterPassword" },
-        "Tags" : [
-          { "Key" : "Name", "Value" : "Sonar MySQL Database" },
-          { "Key": "gsn.Application", "Value": "fabric" },
-          { "Key": "gsn.Service", "Value": "sonar" },
-          { "Key": "gsn.Environment", "Value": { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] } }
-        ]
-      },
-      "DeletionPolicy" : "Delete"
-    },
-
     "sonarTaskDefinition": {
       "Type": "AWS::ECS::TaskDefinition",
       "Properties" : {
@@ -386,6 +367,26 @@
         "DesiredCount": "1",
         "TaskDefinition" : { "Ref": "sonarTaskDefinition" }
       }
+    }
+  },
+  "OtherStuff": {
+    "db" : {
+      "Type" : "AWS::RDS::DBInstance",
+      "Properties" : {
+        "AllocatedStorage": "100",
+        "DBInstanceClass": "db.m1.small",
+        "Engine" : "MySQL",
+        "EngineVersion" : "5.5",
+        "MasterUsername" : { "Ref": "DbMasterUsername" },
+        "MasterUserPassword" : { "Ref": "DbMasterPassword" },
+        "Tags" : [
+          { "Key" : "Name", "Value" : "Sonar MySQL Database" },
+          { "Key": "gsn.Application", "Value": "fabric" },
+          { "Key": "gsn.Service", "Value": "sonar" },
+          { "Key": "gsn.Environment", "Value": { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] } }
+        ]
+      },
+      "DeletionPolicy" : "Delete"
     }
   }
 }
