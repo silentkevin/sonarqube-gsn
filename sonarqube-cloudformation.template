@@ -363,7 +363,9 @@
             "Essential": "true",
             "Links": [],
             "Environment": [
-              { "Name": "DISCOVERY_PORT", "Value": "8500" }
+              { "Name": "SONARQUBE_JDBC_USERNAME", "Value": { "Ref": "DbMasterUsername" } },
+              { "Name": "SONARQUBE_JDBC_PASSWORD", "Value": { "Ref": "DbMasterPassword" } },
+              { "Name": "SONARQUBE_JDBC_URL", "Value": { "Fn::Join": [ "", [ "jdbc:mysql://",  { "Fn::GetAtt" : ["db", "Endpoint.Address"] }, ":", { "Fn::GetAtt" : ["db", "Endpoint.Port"] }, "/sonar" ] ] } }
             ]
           }
         ],
@@ -392,7 +394,8 @@
     "db" : {
       "Type" : "AWS::RDS::DBInstance",
       "Properties" : {
-        "AllocatedStorage": "100",
+        "DBName": "sonar",
+        "AllocatedStorage": "10",
         "DBInstanceClass": "db.m1.small",
         "Engine" : "MySQL",
         "EngineVersion" : "5.5",
