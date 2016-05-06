@@ -6,7 +6,7 @@
     "KeyPairName" : { "Type" : "AWS::EC2::KeyPair::KeyName", "Default": "aws-sandbox-key" },
     "FabricVpcStackName": { "Type": "String" },
     "DbMasterUsername": { "Type": "String" },
-    "DbMasterPassword": { "Type": "String" },
+    "DbMasterPassword": { "Type": "String", "NoEcho" : "false" },
     "CloudFormationGetOutputLambdaFunctionName": { "Type": "String" }
   },
   "Resources": {
