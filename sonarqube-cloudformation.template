@@ -1,0 +1,228 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "",
+  "Parameters": {
+    "AmiId": { "Type": "String", "Default": "ami-eef4e284" },
+    "KeyPairName" : { "Type" : "AWS::EC2::KeyPair::KeyName", "Default": "aws-sandbox-key" },
+    "FabricVpcStackName": { "Type": "String" },
+    "CloudFormationGetOutputLambdaFunctionName": { "Type": "String" }
+  },
+  "Resources": {
+    "vpcStackInfo": {
+      "Type": "Custom::VpcStackInfo",
+      "Properties": {
+        "ServiceToken": { "Fn::Join": [ "", [ "arn:aws:lambda:", { "Ref": "AWS::Region" }, ":", { "Ref": "AWS::AccountId" }, ":function:", {"Ref" : "CloudFormationGetOutputLambdaFunctionName"} ] ] },
+        "StackName": { "Ref": "FabricVpcStackName" }
+      }
+    },
+    "sonarCluster": {
+      "Type": "AWS::ECS::Cluster"
+    },
+    "eventNotificationTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "Subscription": [ { "Endpoint": "kbrown@gsngames.com", "Protocol": "email" } ]
+      }
+    },
+    "launchConfig" : {
+      "Type" : "AWS::AutoScaling::LaunchConfiguration",
+      "Metadata" : {
+        "Comment" : "Event service launch configuration",
+        "AWS::CloudFormation::Init" : {
+          "config" : {
+
+            "commands" : {
+              "01_add_instance_to_cluster" : {
+                "command" : { "Fn::Join": [ "", [ "#!/bin/bash\n", "echo ECS_CLUSTER=", { "Ref": "sonarCluster" }, " >> /etc/ecs/ecs.config" ] ] }
+              }
+            },
+
+            "files" : {
+              "/etc/cfn/cfn-hup.conf" : {
+                "content" : { "Fn::Join" : ["", [
+                  "[main]\n",
+                  "stack=", { "Ref" : "AWS::StackId" }, "\n",
+                  "region=", { "Ref" : "AWS::Region" }, "\n"
+                ]]},
+                "mode"    : "000400",
+                "owner"   : "root",
+                "group"   : "root"
+              },
+              "/etc/cfn/hooks.d/cfn-auto-reloader.conf" : {
+                "content": { "Fn::Join" : ["", [
+                  "[cfn-auto-reloader-hook]\n",
+                  "triggers=post.update\n",
+                  "path=Resources.ContainerInstances.Metadata.AWS::CloudFormation::Init\n",
+                  "action=/opt/aws/bin/cfn-init -v ",
+                  "         --stack ", { "Ref" : "AWS::StackName" },
+                  "         --resource eventClusterLaunchConfig ",
+                  "         --region ", { "Ref" : "AWS::Region" }, "\n",
+                  "runas=root\n"
+                ]]}
+              }
+            },
+
+            "services" : {
+              "sysvinit" : {
+                "cfn-hup" : { "enabled" : "true", "ensureRunning" : "true", "files" : ["/etc/cfn/cfn-hup.conf", "/etc/cfn/hooks.d/cfn-auto-reloader.conf"] }
+              }
+            }
+          }
+        }
+      },
+      "Properties" : {
+        "KeyName" : { "Ref" : "KeyPairName" },
+        "ImageId" : { "Ref": "AmiId" },
+        "SecurityGroups" : [ { "Ref" : "ecsEc2InstanceSecurityGroup" }, { "Fn::GetAtt": [ "vpcStackInfo", "fabricVpcSgSshFromNatId" ] } ],
+        "InstanceType" : "t2.medium",
+        "IamInstanceProfile": { "Ref" : "ecsEc2InstanceProfile" },
+        "UserData"       : { "Fn::Base64" : { "Fn::Join" : ["", [
+          "#!/bin/bash -x\n",
+
+          "yum -y update\n",
+          "yum -y install aws-cli aws-cfn-bootstrap jq git-core telnet\n",
+
+          "/opt/aws/bin/cfn-init -v ",
+          "         --stack ", { "Ref" : "AWS::StackName" },
+          "         --resource launchConfig ",
+          "         --region ", { "Ref" : "AWS::Region" }, "\n",
+
+          "/opt/aws/bin/cfn-signal -e $? ",
+          "         --stack ", { "Ref" : "AWS::StackName" },
+          "         --resource autoScalingGroup ",
+          "         --region ", { "Ref" : "AWS::Region" }, "\n"
+        ]]}}
+      }
+    },
+    "autoScalingGroup" : {
+      "Type" : "AWS::AutoScaling::AutoScalingGroup",
+      "Properties" : {
+        "VPCZoneIdentifier": [ { "Fn::GetAtt": [ "vpcStackInfo", "privateSubnetAz1Id" ] }, { "Fn::GetAtt": [ "vpcStackInfo", "privateSubnetAz2Id" ] } ],
+        "LaunchConfigurationName" : { "Ref" : "launchConfig" },
+        "MinSize" : "1",
+        "MaxSize" : "1",
+        "LoadBalancerNames" : [],
+        "NotificationConfiguration" : {
+          "TopicARN" : { "Ref" : "eventNotificationTopic" },
+          "NotificationTypes" : [
+            "autoscaling:EC2_INSTANCE_LAUNCH",
+            "autoscaling:EC2_INSTANCE_LAUNCH_ERROR",
+            "autoscaling:EC2_INSTANCE_TERMINATE",
+            "autoscaling:EC2_INSTANCE_TERMINATE_ERROR"
+          ]
+        },
+        "Tags": [
+          { "Key": "Name", "Value": { "Fn::Join" : [ "_", [ { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] }, "eventClusterAutoScalingGroup" ] ] }, "PropagateAtLaunch": "true" },
+          { "Key": "gsn.ApplicationName", "Value": "GSN Fabric", "PropagateAtLaunch": "true" },
+          { "Key": "gsn.Service", "Value": "event", "PropagateAtLaunch": "true" },
+          { "Key": "gsn.Environment", "Value": { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] }, "PropagateAtLaunch": "true" }
+        ]
+      },
+      "CreationPolicy" : {
+        "ResourceSignal" : {
+          "Count": "1",
+          "Timeout": "PT15M"
+        }
+      },
+      "UpdatePolicy": {
+        "AutoScalingRollingUpdate": {
+          "MinInstancesInService": "1",
+          "MaxBatchSize": "1",
+          "PauseTime" : "PT15M",
+          "WaitOnResourceSignals": "true"
+        }
+      }
+    },
+    "ecsEc2InstanceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version" : "2012-10-17",
+          "Statement": [ {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": [ "ec2.amazonaws.com" ]
+            },
+            "Action": [ "sts:AssumeRole" ]
+          } ]
+        },
+        "Path": "/",
+        "Policies": [
+        ]
+      }
+    },
+    "ecsEc2InstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          { "Ref": "ecsEc2InstanceRole" }
+        ]
+      }
+    },
+
+    "ecsEc2InstanceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group for ec2 container instances used by event service",
+        "VpcId": { "Fn::GetAtt": [ "vpcStackInfo", "vpcId" ] },
+        "Tags": [
+          { "Key": "Name", "Value": "eventEcsEc2InstanceSecurityGroup" },
+          { "Key": "gsn.Application", "Value": "fabric" },
+          { "Key": "gsn.Service", "Value": "event" },
+          { "Key": "gsn.Environment", "Value": { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] } }
+        ]
+      }
+    },
+    "ecsEc2InstanceSecurityGroupIngress1": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": { "Ref": "ecsEc2InstanceSecurityGroup" },
+        "FromPort": "9000",
+        "ToPort": "9000",
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": { "Ref": "elbSecurityGroup" }
+      }
+    },
+    "ecsEc2InstanceSecurityGroupEgress1": {
+      "Type": "AWS::EC2::SecurityGroupEgress",
+      "Properties": {
+        "GroupId": { "Ref": "elbSecurityGroup" },
+        "IpProtocol": "-1",
+        "CidrIp": "0.0.0.0/0"
+      }
+    },
+
+    "elbSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group for ELB in the event service",
+        "VpcId": { "Fn::GetAtt": [ "vpcStackInfo", "vpcId" ] },
+        "Tags": [
+          { "Key": "Name", "Value": "eventElbSecurityGroup" },
+          { "Key": "gsn.Application", "Value": "fabric" },
+          { "Key": "gsn.Service", "Value": "event" },
+          { "Key": "gsn.Environment", "Value": { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] } }
+        ]
+      }
+    },
+    "eventElbSecurityGroupIngress2": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": { "Ref": "elbSecurityGroup" },
+        "IpProtocol": "tcp",
+        "FromPort": "443",
+        "ToPort": "443",
+        "CidrIp": "0.0.0.0/0"
+      }
+    },
+    "eventElbSecurityGroupEgress1": {
+      "Type": "AWS::EC2::SecurityGroupEgress",
+      "Properties": {
+        "GroupId": { "Ref": "elbSecurityGroup" },
+        "IpProtocol": "-1",
+        "CidrIp": "0.0.0.0/0"
+      }
+    }
+  }
+}
