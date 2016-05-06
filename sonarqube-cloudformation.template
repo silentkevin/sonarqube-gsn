@@ -1,10 +1,12 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "",
+  "Description": "Sonarqube evaluation formation",
   "Parameters": {
     "AmiId": { "Type": "String", "Default": "ami-a1fa1acc" },
     "KeyPairName" : { "Type" : "AWS::EC2::KeyPair::KeyName", "Default": "aws-sandbox-key" },
     "FabricVpcStackName": { "Type": "String" },
+    "DbMasterUsername": { "Type": "String" },
+    "DbMasterPassword": { "Type": "String" },
     "CloudFormationGetOutputLambdaFunctionName": { "Type": "String" }
   },
   "Resources": {
@@ -283,8 +285,8 @@
         "DBInstanceClass": "db.m1.small",
         "Engine" : "MySQL",
         "EngineVersion" : "5.5",
-        "MasterUsername" : "sonarqube",
-        "MasterUserPassword" : "sonarqube",
+        "MasterUsername" : { "Ref": "DbMasterUsername" },
+        "MasterUserPassword" : { "Ref": "DbMasterPassword" },
         "Tags" : [
           { "Key" : "Name", "Value" : "Sonar MySQL Database" },
           { "Key": "gsn.Application", "Value": "fabric" },
