@@ -225,6 +225,57 @@
       }
     },
 
+    "frontendElb" : {
+      "Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Properties" : {
+        "Subnets": [ { "Fn::GetAtt": [ "vpcStackInfo", "publicSubnetElbAz1Id" ] }, { "Fn::GetAtt": [ "vpcStackInfo", "publicSubnetElbAz2Id" ] } ],
+        "SecurityGroups": [
+          { "Fn::GetAtt": [ "ecsEc2InstanceSecurityGroup", "GroupId" ] },
+          { "Fn::GetAtt": [ "elbSecurityGroup", "GroupId" ] }
+        ],
+        "Listeners" : [
+          {
+            "LoadBalancerPort" : "443",
+            "InstancePort" : "9000",
+            "Protocol" : "HTTPS",
+            "SSLCertificateId": "arn:aws:iam::913963800995:server-certificate/star_devfabric_gsngames_com"
+          }
+        ],
+        "HealthCheck" : {
+          "Target" : "HTTP:9000/health",
+          "HealthyThreshold" : "2",
+          "UnhealthyThreshold" : "10",
+          "Interval" : "30",
+          "Timeout" : "5"
+        },
+        "Tags": [
+          { "Key": "Name", "Value": { "Fn::Join": [ "_", [ { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] }, "sonarFrontendElb" ] ] } },
+          { "Key": "gsn.Application", "Value": "fabric" },
+          { "Key": "gsn.Service", "Value": "sonar" },
+          { "Key": "gsn.ResourceName", "Value": "frontendElb" },
+          { "Key": "gsn.Environment", "Value": { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] } }
+        ]
+      }
+    },
+
+    "eventServiceFrontendElbRoute53DnsRecord" : {
+      "Type": "AWS::Route53::RecordSetGroup",
+      "Properties" : {
+        "HostedZoneName": { "Fn::GetAtt": [ "vpcStackInfo", "route53HostedZoneName" ] },
+        "Comment": { "Fn::Join": [ " ", [ { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] }, "sonar service load balancer" ] ] },
+        "RecordSets": [
+          {
+            "Name": "sonar.devfabric.gsngames.com",
+            "Type": "A",
+            "AliasTarget" : {
+              "HostedZoneId": { "Fn::GetAtt" : [ "frontendElb", "CanonicalHostedZoneNameID" ] },
+              "DNSName": { "Fn::GetAtt" : [ "frontendElb", "CanonicalHostedZoneName" ] }
+            }
+          }
+        ]
+      }
+    },
+
     "db" : {
       "Type" : "AWS::RDS::DBInstance",
       "Properties" : {
