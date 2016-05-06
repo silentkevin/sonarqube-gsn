@@ -362,6 +362,7 @@
       "Type": "AWS::ECS::Service",
       "DependsOn": [ "autoScalingGroup" ],
       "Properties" : {
+        "LoadBalancers": [ { "Ref": "frontendElb" } ],
         "Role": { "Ref": "ecsServiceRole" },
         "Cluster": { "Ref": "sonarCluster" },
         "DesiredCount": "1",
