@@ -18,7 +18,7 @@
     "sonarCluster": {
       "Type": "AWS::ECS::Cluster"
     },
-    "eventNotificationTopic": {
+    "notificationTopic": {
       "Type": "AWS::SNS::Topic",
       "Properties": {
         "Subscription": [ { "Endpoint": "kbrown@gsngames.com", "Protocol": "email" } ]
@@ -27,7 +27,7 @@
     "launchConfig" : {
       "Type" : "AWS::AutoScaling::LaunchConfiguration",
       "Metadata" : {
-        "Comment" : "Event service launch configuration",
+        "Comment" : "Sonar service launch configuration",
         "AWS::CloudFormation::Init" : {
           "config" : {
 
@@ -55,7 +55,7 @@
                   "path=Resources.ContainerInstances.Metadata.AWS::CloudFormation::Init\n",
                   "action=/opt/aws/bin/cfn-init -v ",
                   "         --stack ", { "Ref" : "AWS::StackName" },
-                  "         --resource eventClusterLaunchConfig ",
+                  "         --resource launchConfig ",
                   "         --region ", { "Ref" : "AWS::Region" }, "\n",
                   "runas=root\n"
                 ]]}
@@ -103,7 +103,7 @@
         "MaxSize" : "1",
         "LoadBalancerNames" : [],
         "NotificationConfiguration" : {
-          "TopicARN" : { "Ref" : "eventNotificationTopic" },
+          "TopicARN" : { "Ref" : "notificationTopic" },
           "NotificationTypes" : [
             "autoscaling:EC2_INSTANCE_LAUNCH",
             "autoscaling:EC2_INSTANCE_LAUNCH_ERROR",
@@ -112,9 +112,9 @@
           ]
         },
         "Tags": [
-          { "Key": "Name", "Value": { "Fn::Join" : [ "_", [ { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] }, "eventClusterAutoScalingGroup" ] ] }, "PropagateAtLaunch": "true" },
+          { "Key": "Name", "Value": { "Fn::Join" : [ "_", [ { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] }, "sonarClusterAutoScalingGroup" ] ] }, "PropagateAtLaunch": "true" },
           { "Key": "gsn.ApplicationName", "Value": "GSN Fabric", "PropagateAtLaunch": "true" },
-          { "Key": "gsn.Service", "Value": "event", "PropagateAtLaunch": "true" },
+          { "Key": "gsn.Service", "Value": "sonar", "PropagateAtLaunch": "true" },
           { "Key": "gsn.Environment", "Value": { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] }, "PropagateAtLaunch": "true" }
         ]
       },
@@ -164,12 +164,12 @@
     "ecsEc2InstanceSecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
-        "GroupDescription": "Security group for ec2 container instances used by event service",
+        "GroupDescription": "Security group for ec2 container instances used by sonar service",
         "VpcId": { "Fn::GetAtt": [ "vpcStackInfo", "vpcId" ] },
         "Tags": [
-          { "Key": "Name", "Value": "eventEcsEc2InstanceSecurityGroup" },
+          { "Key": "Name", "Value": "ecsEc2InstanceSecurityGroup" },
           { "Key": "gsn.Application", "Value": "fabric" },
-          { "Key": "gsn.Service", "Value": "event" },
+          { "Key": "gsn.Service", "Value": "sonar" },
           { "Key": "gsn.Environment", "Value": { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] } }
         ]
       }
@@ -196,17 +196,17 @@
     "elbSecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
-        "GroupDescription": "Security group for ELB in the event service",
+        "GroupDescription": "Security group for ELB in the sonar service",
         "VpcId": { "Fn::GetAtt": [ "vpcStackInfo", "vpcId" ] },
         "Tags": [
-          { "Key": "Name", "Value": "eventElbSecurityGroup" },
+          { "Key": "Name", "Value": "elbSecurityGroup" },
           { "Key": "gsn.Application", "Value": "fabric" },
-          { "Key": "gsn.Service", "Value": "event" },
+          { "Key": "gsn.Service", "Value": "sonar" },
           { "Key": "gsn.Environment", "Value": { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] } }
         ]
       }
     },
-    "eventElbSecurityGroupIngress2": {
+    "elbSecurityGroupIngress2": {
       "Type": "AWS::EC2::SecurityGroupIngress",
       "Properties": {
         "GroupId": { "Ref": "elbSecurityGroup" },
@@ -216,13 +216,32 @@
         "CidrIp": "0.0.0.0/0"
       }
     },
-    "eventElbSecurityGroupEgress1": {
+    "elbSecurityGroupEgress1": {
       "Type": "AWS::EC2::SecurityGroupEgress",
       "Properties": {
         "GroupId": { "Ref": "elbSecurityGroup" },
         "IpProtocol": "-1",
         "CidrIp": "0.0.0.0/0"
       }
+    },
+
+    "db" : {
+      "Type" : "AWS::RDS::DBInstance",
+      "Properties" : {
+        "AllocatedStorage": "100",
+        "DBInstanceClass": "db.m1.small",
+        "Engine" : "MySQL",
+        "EngineVersion" : "5.5",
+        "MasterUsername" : "sonar",
+        "MasterUserPassword" : "sonar",
+        "Tags" : [
+          { "Key" : "Name", "Value" : "Sonar MySQL Database" },
+          { "Key": "gsn.Application", "Value": "fabric" },
+          { "Key": "gsn.Service", "Value": "sonar" },
+          { "Key": "gsn.Environment", "Value": { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] } }
+        ]
+      },
+      "DeletionPolicy" : "Delete"
     }
   }
 }
