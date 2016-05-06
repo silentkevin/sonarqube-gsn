@@ -343,7 +343,10 @@
             "Image": "sonarqube:5.5",
             "Cpu": "512",
             "PortMappings":[
-              { "ContainerPort": "9000" }
+              {
+                "HostPort": "9000",
+                "ContainerPort": "9000"
+              }
             ],
             "EntryPoint": [],
             "Memory": "1512",
