@@ -362,7 +362,13 @@
       "Type": "AWS::ECS::Service",
       "DependsOn": [ "autoScalingGroup" ],
       "Properties" : {
-        "LoadBalancers": [ { "Ref": "frontendElb" } ],
+        "LoadBalancers": [
+          {
+            "ContainerName": "sonarqube",
+            "ContainerPort": "9000",
+            "LoadBalancerName": { "Ref": "frontendElb" }
+          }
+        ],
         "Role": { "Ref": "ecsServiceRole" },
         "Cluster": { "Ref": "sonarCluster" },
         "DesiredCount": "1",
