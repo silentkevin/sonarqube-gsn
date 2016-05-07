@@ -427,6 +427,7 @@
       "Type" : "AWS::RDS::DBInstance",
       "Properties" : {
         "DBName": "sonar",
+        "DBSubnetGroupName": { "Fn::GetAtt": [ "vpcStackInfo", "privateSubnetAz1Id" ] },
         "VPCSecurityGroups": [ { "Ref": "dbSecurityGroup" } ],
         "AllocatedStorage": "10",
         "DBInstanceClass": "db.t2.small",
