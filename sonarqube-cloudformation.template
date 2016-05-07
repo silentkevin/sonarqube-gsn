@@ -407,7 +407,7 @@
     "dbSecurityGroupIngress1": {
       "Type": "AWS::EC2::SecurityGroupIngress",
       "Properties": {
-        "GroupId": { "Ref": "elbSecurityGroup" },
+        "GroupId": { "Ref": "dbSecurityGroup" },
         "IpProtocol": "tcp",
         "FromPort": "3306",
         "ToPort": "3306",
@@ -417,7 +417,7 @@
     "dbSecurityGroupEgress1": {
       "Type": "AWS::EC2::SecurityGroupEgress",
       "Properties": {
-        "GroupId": { "Ref": "elbSecurityGroup" },
+        "GroupId": { "Ref": "dbSecurityGroup" },
         "IpProtocol": "-1",
         "CidrIp": "0.0.0.0/0"
       }
