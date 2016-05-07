@@ -423,11 +423,25 @@
       }
     },
 
+    "dbSubnetGroup": {
+      "Type" : "AWS::RDS::DBSubnetGroup",
+      "Properties" : {
+        "DBSubnetGroupDescription": "Sonar MySQL Database Subnet Group",
+        "SubnetIds": [ { "Fn::GetAtt": [ "vpcStackInfo", "privateSubnetAz1Id" ] }, { "Fn::GetAtt": [ "vpcStackInfo", "privateSubnetAz2Id" ] }],
+        "Tags" : [
+          { "Key": "Name", "Value" : "Sonar MySQL Database Subnet Group" },
+          { "Key": "gsn.Application", "Value": "fabric" },
+          { "Key": "gsn.Service", "Value": "sonar" },
+          { "Key": "gsn.Environment", "Value": { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] } }
+        ]
+      }
+    },
+
     "db" : {
       "Type" : "AWS::RDS::DBInstance",
       "Properties" : {
         "DBName": "sonar",
-        "DBSubnetGroupName": { "Fn::GetAtt": [ "vpcStackInfo", "privateSubnetAz1Id" ] },
+        "DBSubnetGroupName": { "Ref": "dbSubnetGroup" },
         "VPCSecurityGroups": [ { "Ref": "dbSecurityGroup" } ],
         "AllocatedStorage": "10",
         "DBInstanceClass": "db.t2.small",
