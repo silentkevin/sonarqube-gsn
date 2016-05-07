@@ -273,7 +273,7 @@
         ]
       }
     },
-    "elbSecurityGroupIngress2": {
+    "elbSecurityGroupIngress1": {
       "Type": "AWS::EC2::SecurityGroupIngress",
       "Properties": {
         "GroupId": { "Ref": "elbSecurityGroup" },
@@ -391,14 +391,48 @@
       }
     },
 
+    "dbSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group for ELB in the sonar service",
+        "VpcId": { "Fn::GetAtt": [ "vpcStackInfo", "vpcId" ] },
+        "Tags": [
+          { "Key": "Name", "Value": "dbSecurityGroup" },
+          { "Key": "gsn.Application", "Value": "fabric" },
+          { "Key": "gsn.Service", "Value": "sonar" },
+          { "Key": "gsn.Environment", "Value": { "Fn::GetAtt": [ "vpcStackInfo", "environmentName" ] } }
+        ]
+      }
+    },
+    "dbSecurityGroupIngress1": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": { "Ref": "elbSecurityGroup" },
+        "IpProtocol": "tcp",
+        "FromPort": "3306",
+        "ToPort": "3306",
+        "SourceSecurityGroupId": { "Ref": "ecsEc2InstanceSecurityGroup" }
+      }
+    },
+    "dbSecurityGroupEgress1": {
+      "Type": "AWS::EC2::SecurityGroupEgress",
+      "Properties": {
+        "GroupId": { "Ref": "elbSecurityGroup" },
+        "IpProtocol": "-1",
+        "CidrIp": "0.0.0.0/0"
+      }
+    },
+
     "db" : {
       "Type" : "AWS::RDS::DBInstance",
       "Properties" : {
         "DBName": "sonar",
-        "AllocatedStorage": "5",
+        "VPCSecurityGroups": [ { "Ref": "dbSecurityGroup" } ],
+        "AllocatedStorage": "10",
         "DBInstanceClass": "db.t2.small",
         "Engine" : "MySQL",
         "EngineVersion" : "5.7",
+        "Port": "3306",
         "MasterUsername" : { "Ref": "DbMasterUsername" },
         "MasterUserPassword" : { "Ref": "DbMasterPassword" },
         "Tags" : [
