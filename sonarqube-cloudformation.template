@@ -395,8 +395,8 @@
       "Type" : "AWS::RDS::DBInstance",
       "Properties" : {
         "DBName": "sonar",
-        "AllocatedStorage": "10",
-        "DBInstanceClass": "db.m1.small",
+        "AllocatedStorage": "5",
+        "DBInstanceClass": "db.t2.small",
         "Engine" : "MySQL",
         "EngineVersion" : "5.7",
         "MasterUsername" : { "Ref": "DbMasterUsername" },
