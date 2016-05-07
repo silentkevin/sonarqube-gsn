@@ -1,0 +1,20 @@
+mysql:
+  image: mysql:5.7
+  restart: always
+  environment:
+    - MYSQL_ROOT_PASSWORD=sonarqube12
+    - MYSQL_DATABASE=sonar
+  ports:
+    - 3306:3306
+
+sonar:
+  image: sonarqube:5.5
+  ports:
+    - 9000:9000
+  restart: always
+  environment:
+    - SONARQUBE_JDBC_USERNAME=root
+    - SONARQUBE_JDBC_PASSWORD=sonarqube12
+    - SONARQUBE_JDBC_URL=jdbc:mysql://mysql:3306/sonar?useUnicode=true&characterEncoding=utf8
+  links:
+    - mysql

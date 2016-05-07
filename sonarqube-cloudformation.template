@@ -398,7 +398,7 @@
         "AllocatedStorage": "10",
         "DBInstanceClass": "db.m1.small",
         "Engine" : "MySQL",
-        "EngineVersion" : "5.5",
+        "EngineVersion" : "5.7",
         "MasterUsername" : { "Ref": "DbMasterUsername" },
         "MasterUserPassword" : { "Ref": "DbMasterPassword" },
         "Tags" : [
