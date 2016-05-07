@@ -365,7 +365,7 @@
             "Environment": [
               { "Name": "SONARQUBE_JDBC_USERNAME", "Value": { "Ref": "DbMasterUsername" } },
               { "Name": "SONARQUBE_JDBC_PASSWORD", "Value": { "Ref": "DbMasterPassword" } },
-              { "Name": "SONARQUBE_JDBC_URL", "Value": { "Fn::Join": [ "", [ "jdbc:mysql://",  { "Fn::GetAtt" : ["db", "Endpoint.Address"] }, ":", { "Fn::GetAtt" : ["db", "Endpoint.Port"] }, "/sonar" ] ] } }
+              { "Name": "SONARQUBE_JDBC_URL", "Value": { "Fn::Join": [ "", [ "jdbc:mysql://",  { "Fn::GetAtt" : ["db", "Endpoint.Address"] }, ":", { "Fn::GetAtt" : ["db", "Endpoint.Port"] }, "/sonar?useUnicode=true" ] ] } }
             ]
           }
         ],
