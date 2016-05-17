@@ -7,6 +7,7 @@
     "FabricVpcStackName": { "Type": "String" },
     "DbMasterUsername": { "Type": "String" },
     "DbMasterPassword": { "Type": "String", "NoEcho" : "false" },
+    "SupportBucketName": { "Type": "String", "Default": "ecs-support" },
     "CloudFormationGetOutputLambdaFunctionName": { "Type": "String" }
   },
   "Resources": {
@@ -159,6 +160,21 @@
                   "Effect": "Allow",
                   "Action": "ecs:*",
                   "Resource": "*"
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "allowS3BucketPathFullAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "s3:*",
+                  "Resource": [
+                    { "Fn::Join": [ "", [ "arn:aws:s3:::", { "Ref": "SupportBucketName" }, "/sonarqube/*" ] ] }
+                  ]
                 }
               ]
             }
