@@ -16,5 +16,8 @@ sonar:
     - SONARQUBE_JDBC_USERNAME=root
     - SONARQUBE_JDBC_PASSWORD=sonarqube12
     - SONARQUBE_JDBC_URL=jdbc:mysql://mysql:3306/sonar?useUnicode=true&characterEncoding=utf8
+  volumes:
+    - ./volumes/ext:/opt/sonarqube/extensions
+    - ./volumes/data:/opt/sonarqube/data
   links:
     - mysql

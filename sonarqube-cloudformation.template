@@ -349,7 +349,10 @@
         "ContainerDefinitions" : [
           {
             "Name": "sonarqube",
-            "MountPoints": [],
+            "MountPoints": [
+              { "SourceVolume": "sonarqube-extensions", "ContainerPath": "/opt/sonarqube/extensions" },
+              { "SourceVolume": "sonarqube-data", "ContainerPath": "/opt/sonarqube/data" }
+            ],
             "Image": "sonarqube:5.5",
             "Cpu": "512",
             "PortMappings":[
@@ -370,7 +373,10 @@
             ]
           }
         ],
-        "Volumes": []
+        "Volumes": [
+          { "Host": { "SourcePath": "/home/ec2-user/sonarqube/extensions" }, "Name": "sonarqube-extensions" },
+          { "Host": { "SourcePath": "/home/ec2-user/sonarqube/data" }, "Name": "sonarqube-data" }
+        ]
       }
     },
 
